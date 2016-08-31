@@ -25,6 +25,31 @@ all.sheds$Site <- c('RB', 'RB_1', 'REM', 'LF', 'MR14', 'MR2', 'LB', 'MR')
 
 #Subset to our primary sites
 isco.sheds <- all.sheds[all.sheds$Site %in% c('RB', 'LF', 'MR', 'LB'), ]
+
+#Add some site names and details. 
+isco.sheds$Site <-
+  factor(isco.sheds$Site, levels = c('RB', 'LF', 'LB', 'MR'))
+isco.sheds$BigName <-
+  factor(
+    c(
+      'RB (118 ha, ref.)',
+      'LF (3,400 ha, ref.)',
+      'LB (68 ha, 99% mined)',
+      'MR (3,600 ha, 46% mined)'
+    ),
+    levels = c(
+      'RB (118 ha, ref.)',
+      'LF (3,400 ha, ref.)',
+      'LB (68 ha, 99% mined)',
+      'MR (3,600 ha, 46% mined)'
+    )
+  )
+
+
+#Reorganize so leaflet plot allows for clicking on LB catchment
+isco.sheds <- isco.sheds[c(1, 2, 4, 3), ]
+
+
 # #Check that it makes sense
 # plot(isco.sheds, col = 1:4)
 # legend(
@@ -35,7 +60,8 @@ isco.sheds <- all.sheds[all.sheds$Site %in% c('RB', 'LF', 'MR', 'LB'), ]
 # )
 
 
-
+site.size <- data.frame(Site=c('LB','RB','LF','MR'),
+                        size=c(68,118,3463,3672))
 
 #Load flux data
 load('~/Dropbox/Shared Science/NSF_MTM_All/MTM_MudRiver/tidy_data/Flux.Dat.RData')
@@ -58,6 +84,8 @@ ct <- 0
 f.l <- list()
 c.l <- list()
 fc.l <- list()
+flux.l <- list()
+f.t.l <- list()
 for(i in 1:length(elements)){
   #Subset element
   el <- flux.dat[flux.dat$element == elements[i],]
@@ -67,39 +95,53 @@ for(i in 1:length(elements)){
     el.site <- el[el$site == sites[j],]
     #Melt to get lwr,fit, and uppper in right spots
     fl.melt <- melt(el.site, id.vars=c('min10','date'),measure.vars=c('area.flx','min.area.flx','max.area.flx'))
-    fl.melt$value <- fl.melt$value * 1000 #(g/ha/10min)
+    fl.melt$value <- fl.melt$value #(kg/ha/10min)
     fl.melt$value[fl.melt$value < 0] <- 0 # Floor flux to zero
     c.melt <- melt(el.site,id.vars=c('min10','date'),measure.vars=c('min.conc','conc','max.conc'))
     c.melt$value[c.melt$value < 0] <- 0 
     #Cast to put data in vectors for xts. 
-    fl.cast <- dcast(fl.melt,date~variable,sum) #g/ha/day
+    fl.cast <- dcast(fl.melt,date~variable,sum) #kg/ha/day
     c.cast <- dcast(c.melt,date~variable,mean)
+
     #remove first day
     fl.cast <- fl.cast[-1,]
     c.cast <- c.cast[-1,]
+    fl.cast$Site <- sites[j]
+    fl.cast$Ion <- elements[i]
+    fl.cast$cume <- cumsum(fl.cast$area.flx)
+    fl.cast$tot.fl <- fl.cast$area.flx*site.size[site.size$Site == sites[j],'size']
+    fl.cast$p.cume <- fl.cast$cume/(max(fl.cast$cume))
+    fl.cast$conc <- c.cast[,'conc']
+    nm <- paste(elements[i],sites[j],sep='.')
+    
     #Convert to xts format for quicker plotting and storage
     flx.xts <- xts(cbind('Lwr.flux'=fl.cast$min.area.flx,'Fit.flux'=fl.cast$area.flx,'Upr.flux'=fl.cast$max.area.flx),order.by=fl.cast$date)
+    flx.tot.xts <- flx.xts*site.size[site.size$Site == sites[j],'size']
     c.xts <-  xts(cbind('Lwr.conc'=c.cast$min.conc,'Fit.conc'=c.cast$conc,'Upr.conc'=c.cast$max.conc),order.by=c.cast$date)
+    
+    names(flx.xts) <- paste(nm,c('Lwr.flux','Fit.flux','Upr.flux'),sep='.')
+    names(flx.tot.xts) <- paste(nm,c('Lwr.flux','Fit.flux','Upr.flux'),sep='.')
+    names(c.xts) <- paste(nm,c('Lwr.flux','Fit.flux','Upr.flux'),sep='.')
+    
+    
     f.l[[ct]] <- flx.xts
     c.l[[ct]] <- c.xts
     fc.l[[ct]] <- cbind(flx.xts,c.xts)
+    f.t.l[[ct]] <- flx.tot.xts
+    flux.l[[ct]] <- fl.cast
     names(f.l)[[ct]] <- paste(elements[i],sites[j],sep='.')
     names(c.l)[[ct]] <- paste(elements[i],sites[j],sep='.')
     names(fc.l)[[ct]] <- paste(elements[i],sites[j],sep='.')
+    names(f.t.l)[[ct]] <- paste(elements[i],sites[j],sep='.')
   }
 }
 
-
-# save(d.q,d.sc,d.p,f.l,c.l,fc.l,isco.sheds,
-#      file="~/Dropbox/Shared Science/NSF_MTM_All/MTM_Shiny/MTM.Weathering/Flux.Shine.RData")
+full.flux <- do.call(rbind,flux.l)
 
 
-dygraph(fc.l[['SO4.LB']]) %>% dyOptions(useDataTimezone=T) %>%
-  dyAxis('y','Flux g/ha/day',independentTicks=T) %>%
-  dyAxis('y2','Concentration (mg/l)',independentTicks=T) %>%
-  dySeries(c("Lwr.flux", "Fit.flux", "Upr.flux"), label = "Flux (g/ha/day)",color='#01665e',strokeWidth=2) %>%
-  dySeries(c('Lwr.conc','Fit.conc','Upr.conc'),label='Conc (mg/l)',color='#8c510a',axis='y2',strokeWidth=2) %>%
-  dyShading(from='2014-10-1',to='2015-10-1',color='gray')
+
+save(d.q,d.sc,d.p,f.l,c.l,fc.l,isco.sheds,full.flux,f.t.l,
+      file="~/Dropbox/Shared Science/NSF_MTM_All/MTM_Shiny/MTM.Weathering/Flux.Shine.RData")
 
 
 
