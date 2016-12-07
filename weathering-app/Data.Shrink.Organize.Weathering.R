@@ -7,7 +7,6 @@
 library(rgdal)
 library(lubridate)
 library(sp)
-library(reshape2)
 library(dygraphs)
 library(xts)
 library(ggplot2)
@@ -18,6 +17,9 @@ mytimezone <- 'Etc/GMT-5'
 #Read in shapefiles for watershed outlines
 setwd("~/Dropbox/Shared Science/NSF_MTM_All/MTM_TEMP")
 all.sheds <- readOGR('watershedoutlines', 'ALL_merged')
+evnt <- read.csv('mtm_event_counter_consecutively.csv')
+
+
 
 #Convert to leaflet projection wgs84
 all.sheds <- spTransform(all.sheds, CRS('+init=epsg:4326'))

@@ -140,7 +140,8 @@ shinyUI(fluidPage(
             choices = list(
               'Areal flux' = 1,
               'Total flux' = 2,
-              'Concentration dynamics' = 3
+              'Concentration dynamics' = 3,
+              'Stacked Total Flux' = 4
             ),
             selected = 1
           )
@@ -149,21 +150,20 @@ shinyUI(fluidPage(
         conditionalPanel(
           condition = "input.flx != 4",
           h4('1st Order Watersheds',align='center'),
-          dygraphOutput('w1.q', width = '95%', height = '125px'), #1st order Q
+          dygraphOutput('w1.q', width = '95%', height = '100px'), #1st order Q
           br(),
-          dygraphOutput('w1.flux', width = '95%', height = '175px'), #1st Order dynamic flux
-          br(),
+          dygraphOutput('w1.flux', width = '95%', height = '125px'), #1st Order dynamic flux
           h4('4th Order Watersheds',align='center'),
-          dygraphOutput('w4.q',width='95%',height='125px'), #4th order Q
+          dygraphOutput('w4.q',width='95%',height='100px'), #4th order Q
           br(),
-          dygraphOutput('w4.flux',width='95%',height='175px') #4th order flux
+          dygraphOutput('w4.flux',width='95%',height='125px') #4th order flux
         ),
         conditionalPanel(
-          condition = "input.base==2",
-          dygraphOutput('b1', width = '95%', height = '125px'),
-          dygraphOutput('b2', width = '95%', height = '125px'),
-          dygraphOutput('b3', width = '95%', height = '125px'),
-          dygraphOutput('b4', width = '95%', height = '125px')
+          condition = "input.flx==4",
+          dygraphOutput('rb.flx', width = '95%', height = '125px'),
+          dygraphOutput('lb.flx', width = '95%', height = '125px'),
+          dygraphOutput('lf.flx', width = '95%', height = '125px'),
+          dygraphOutput('mr.flx', width = '95%', height = '125px')
         )
       )
     )

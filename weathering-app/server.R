@@ -136,7 +136,7 @@ shinyServer(function(input, output) {
     (input$MapMine_shape_click)
   })
   
-  ######----------------------------Geomorph Tab -----------------------------------######
+#Geomorph.Tab  ######----------------------------Geomorph Tab -----------------------------------######
   
   #Generates a brief summary statement of physical catchment characteristics
   output$Sum.Text <- renderText({
@@ -200,7 +200,7 @@ shinyServer(function(input, output) {
   }, deleteFile = F)
   
   
-  ######---------------------------Hydrology/Conductivity Tab ----------------------------------######
+#Hydro.SC.Tab ######---------------------------Hydrology/Conductivity Tab ----------------------------------######
   
   
   
@@ -291,7 +291,7 @@ shinyServer(function(input, output) {
   ######---------------------------Elemental Flux Tab -----------------------------------------#######
   
   
-  ####-----------------------------Dygraph portion --------------------------------------------######
+#Daily.Flux  ####-----------------------------Dygraph portion --------------------------------------------######
   output$w1.q <- renderDygraph({
     #Get Q columns
     q.xts <- xts(d.q[, c('RB', 'LB')], order.by = d.q$date)
@@ -302,7 +302,7 @@ shinyServer(function(input, output) {
         colors = c(c.col[1], c.col[3]),
         strokeWidth = ld
       ) %>%
-      dyAxis('y', 'Daily Mean Q (mm/hr)')
+      dyAxis('y', 'Q (mm/hr)')
   })
   
   output$w4.q <- renderDygraph({
@@ -315,7 +315,7 @@ shinyServer(function(input, output) {
         drawPoints = F,
         colors = c(c.col[2], c.col[4]),
         strokeWidth = ld
-      ) %>%  dyAxis('y', 'Daily Mean Q (mm/hr)')
+      ) %>%  dyAxis('y', 'Q (mm/hr)')
   })
   
   #Reactive expression to get data depending on user input (areal flux vs flux vs conc, etc...)
@@ -422,7 +422,7 @@ shinyServer(function(input, output) {
   })
   
   
-  ###########--------------------------Reactive Cumulative Flux --------------------------###########
+#Cume.Flux ###########--------------------------Reactive Cumulative Flux --------------------------###########
   
   
   
@@ -474,85 +474,67 @@ shinyServer(function(input, output) {
   
   
   
+#Stack.FLux  ######---------------------Display if Stacked Flux is Chosen --------#####
+
+stack.ions <- c('Na','K','Ca','Mg','Cl','HCO3','SO4')
+stack.cols <- colorRampPalette(c('#313695', '#DF744D', '#a50026'))(7)
+stack.cols
+  output$rb.flx <- renderDygraph({
+    
+    clmn <- paste(stack.ions, rep(c('RB'), each = length(stack.ions)), sep = '.')
+    indx <- which(names(f.l) %in% clmn)
+    f <- do.call(cbind,f.l[indx])
+    f <- f[,grep('Fit.flux',names(f))]
+    names(f) <- sub('.Fit.flux','',names(f))
+    #Reorder
+    f <- f[,rev(c(6,7,3,4,5,2,1))]
+    dygraph(f) %>% dyOptions(stackedGraph=T,colors=stack.cols,
+                             fillAlpha=.8) %>% 
+      dyHighlight(highlightSeriesBackgroundAlpha = .3,
+                  highlightSeriesOpts=list(strokeWidth=3))
   
-  output$b1 <- renderDygraph({
-    q1 <- xts(q.hr[, c('RB.hh', 'RB.Q.mm')], order.by = q.hr$hr)
-    names(q1) <- c('RB.baseflow', 'RB.Q')
-    dygraph(q1, group = 'base', height = '250px') %>%
-      dySeries(
-        'RB.Q',
-        color = 'darkblue',
-        strokeWidth = 3,
-        fillGraph = F
-      ) %>%
-      dySeries(
-        'RB.baseflow',
-        color = 'cyan',
-        strokeWidth = 2.5,
-        fillGraph = T
-      ) %>%
-      dyOptions(useDataTimezone = T, fillAlpha = .3) %>%
-      dyAxis('y', label = 'Q (mm/hr)', valueRange = c(0, 3))
+    })
+  
+  output$lb.flx <- renderDygraph({
+    clmn <- paste(stack.ions, rep(c('LB'), each = length(stack.ions)), sep = '.')
+    indx <- which(names(f.l) %in% clmn)
+    f <- do.call(cbind,f.l[indx])
+    f <- f[,grep('Fit.flux',names(f))]
+    names(f) <- sub('.Fit.flux','',names(f))
+    #Reorder
+    f <- f[,rev(c(6,7,3,4,5,2,1))]
+    dygraph(f) %>% dyOptions(stackedGraph=T,colors=stack.cols,
+                             fillAlpha=.8) %>% 
+      dyHighlight(highlightSeriesBackgroundAlpha = .3,
+                  highlightSeriesOpts=list(strokeWidth=3))
   })
   
-  output$b2 <- renderDygraph({
-    q1 <- xts(q.hr[, c('LB.hh', 'LB.Q.mm')], order.by = q.hr$hr)
-    names(q1) <- c('LB.baseflow', 'LB.Q')
-    dygraph(q1, group = 'base', height = '250px') %>%
-      dySeries(
-        'LB.Q',
-        color = 'darkred',
-        strokeWidth = 3,
-        fillGraph = F
-      ) %>%
-      dySeries(
-        'LB.baseflow',
-        color = 'orange',
-        strokeWidth = 2.5,
-        fillGraph = T
-      ) %>%
-      dyOptions(useDataTimezone = T, fillAlpha = .3) %>%
-      dyAxis('y', label = 'Q (mm/hr)', valueRange = c(0, 3))
+  output$lf.flx <- renderDygraph({
+    clmn <- paste(stack.ions, rep(c('LF'), each = length(stack.ions)), sep = '.')
+    indx <- which(names(f.l) %in% clmn)
+    f <- do.call(cbind,f.l[indx])
+    f <- f[,grep('Fit.flux',names(f))]
+    names(f) <- sub('.Fit.flux','',names(f))
+    #Reorder
+    f <- f[,rev(c(6,7,3,4,5,2,1))]
+    dygraph(f) %>% dyOptions(stackedGraph=T,colors=stack.cols,
+                             fillAlpha=.8) %>% 
+      dyHighlight(highlightSeriesBackgroundAlpha = .3,
+                  highlightSeriesOpts=list(strokeWidth=3))
   })
   
-  output$b3 <- renderDygraph({
-    q1 <- xts(q.hr[, c('LF.hh', 'LF.Q.mm')], order.by = q.hr$hr)
-    names(q1) <- c('LF.baseflow', 'LF.Q')
-    dygraph(q1, group = 'base', height = '250px') %>%
-      dySeries(
-        'LF.Q',
-        color = 'darkblue',
-        strokeWidth = 3,
-        fillGraph = F
-      ) %>%
-      dySeries(
-        'LF.baseflow',
-        color = 'cyan',
-        strokeWidth = 2.5,
-        fillGraph = T
-      ) %>%
-      dyOptions(useDataTimezone = T, fillAlpha = .3) %>%
-      dyAxis('y', label = 'Q (mm/hr)', valueRange = c(0, 3))
-  })
-  
-  output$b4 <- renderDygraph({
-    q1 <- xts(q.hr[, c('MR.hh', 'MR.Q.mm')], order.by = q.hr$hr)
-    names(q1) <- c('MR.baseflow', 'MR.Q')
-    dygraph(q1, group = 'base', height = '250px') %>%
-      dySeries(
-        'MR.Q',
-        color = 'darkred',
-        strokeWidth = 3,
-        fillGraph = F
-      ) %>%
-      dySeries(
-        'MR.baseflow',
-        color = 'orange',
-        strokeWidth = 2.5,
-        fillGraph = T
-      ) %>%
-      dyOptions(useDataTimezone = T, fillAlpha = .3) %>%
-      dyAxis('y', label = 'Q (mm/hr)', valueRange = c(0, 3))
+  output$mr.flx <- renderDygraph({
+    clmn <- paste(stack.ions, rep(c('MR'), each = length(stack.ions)), sep = '.')
+    indx <- which(names(f.l) %in% clmn)
+    f <- do.call(cbind,f.l[indx])
+    f <- f[,grep('Fit.flux',names(f))]
+    names(f) <- sub('.Fit.flux','',names(f))
+    #Reorder
+    f <- f[,rev(c(6,7,3,4,5,2,1))]
+    dygraph(f) %>% dyOptions(stackedGraph=T,colors=stack.cols,
+                             fillAlpha=.8) %>% 
+      dyHighlight(highlightSeriesBackgroundAlpha = .3,
+                  highlightSeriesOpts=list(strokeWidth=3))
   })
   
   })
