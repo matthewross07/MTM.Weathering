@@ -12,6 +12,7 @@ library(scales)
 library(sp)
 library(xts)
 library(magicaxis)
+library(randomcoloR)
 
 #Load data
 load('Flux.Shine.RData')
